@@ -2,7 +2,6 @@ package pw.rejchev.springtesttask.controllers;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -33,11 +32,17 @@ public class BankController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Optional<Bank>> getBank(@PathVariable @Min(0) @Max(999999999) Integer id) {
+
+        logger.debug("Getting bank with id {}", id);
+
         return ResponseEntity.ok(getBankService().getBank(id));
     }
 
     @GetMapping
     public ResponseEntity<Iterable<Bank>> getBanks() {
+
+        logger.debug("Getting banks (service state: {})", bankService);
+
         return ResponseEntity.ok(getBankService().getAll());
     }
 
@@ -45,10 +50,10 @@ public class BankController {
     @PostMapping
     public ResponseEntity<?> createBank(@RequestBody @Validated Bank bank, Errors errors) {
 
-        logger.debug(bank.toString());
-
         if(errors.hasErrors())
             return ResponseEntity.badRequest().body(errors.getAllErrors());
+
+        logger.debug("Creating bank {}", bank);
 
         return ResponseEntity.ok(getBankService().createBank(bank));
 
@@ -63,14 +68,15 @@ public class BankController {
         if(errors.hasErrors())
             return ResponseEntity.badRequest().body(errors.getAllErrors());
 
-        ResponseEntity<?> response = ResponseEntity.badRequest()
-                .body(bank);
+        logger.debug("Updating bank with id {} as {}", id, bank);
 
         Bank result;
         if((result = getBankService().updateBank(id, bank)) != null)
-            response = ResponseEntity.ok(result);
+            return ResponseEntity.ok(result);
 
-        return response;
+        logger.debug("Updating bank failed with id {} ({})", id, bank);
+
+        return ResponseEntity.badRequest().body(bank);
     }
 
     @DeleteMapping("/{id}")
