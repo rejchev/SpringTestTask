@@ -9,9 +9,9 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>pw.rejchev</groupId>
-    <artifactId>SpringTestTask</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>SpringTestTask</name>
+    <artifactId>test-bank</artifactId>
+    <version>0.0.1</version>
+    <name>test-bank</name>
     <description>SpringTestTask</description>
     <url/>
     <licenses>
