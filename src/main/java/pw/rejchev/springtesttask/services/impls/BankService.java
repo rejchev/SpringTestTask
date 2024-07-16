@@ -5,6 +5,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +20,8 @@ import java.util.Optional;
 @Getter
 @Setter
 @Service
+@Transactional
+@CacheConfig(cacheNames = {"banks"})
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class BankService implements IBankService {
 
@@ -34,21 +39,19 @@ public class BankService implements IBankService {
     }
 
     @Override
+    @Cacheable(key = "#bic")
     @Transactional(readOnly = true)
-    @Cacheable(value = "BankService::getBank", key = "#id")
-    public Optional<Bank> getBank(Integer id) {
-        return getBankRepository().findById(id);
+    public Optional<Bank> getBank(Integer bic) {
+        return getBankRepository().findById(bic);
     }
 
     @Override
-    @Transactional
-    @Cacheable(value = "BankService::getBank", key = "#bank.bic", condition = "#bank.bic != null")
+    @CachePut(key = "#bank.bic")
     public Bank createBank(Bank bank) {
         return getBankRepository().save(bank);
     }
 
     @Override
-    @Transactional
     public Bank updateBank(Integer bic, Bank bank) {
 
         Optional<Bank> buf;
@@ -64,19 +67,20 @@ public class BankService implements IBankService {
     }
 
     @Override
-    public void deleteBank(Integer id) {
-        getBankRepository().deleteById(id);
+    @CacheEvict(key = "#bic", allEntries = true)
+    public void deleteBank(Integer bic) {
+        getBankRepository().deleteById(bic);
     }
 
     @Override
+    @CachePut(key = "#query")
     public Iterable<Bank> search(String query, Integer offset, Integer limit) {
         return getBankRepository().searchBanks(query, offset, limit);
     }
 
     @Override
+    @CacheEvict(allEntries = true)
     public void clean() {
         getBankRepository().deleteAll();
     }
-
-
 }

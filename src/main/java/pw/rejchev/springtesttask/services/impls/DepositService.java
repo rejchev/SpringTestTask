@@ -5,20 +5,23 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pw.rejchev.springtesttask.entities.Bank;
 import pw.rejchev.springtesttask.entities.Deposit;
 import pw.rejchev.springtesttask.repositories.IDepositCrudRepository;
 import pw.rejchev.springtesttask.services.IDepositService;
 
-import java.util.Objects;
 import java.util.Optional;
 
 @Getter
 @Setter
 @Service
+@Transactional
+@CacheConfig(cacheNames = "deposits")
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class DepositService implements IDepositService {
 
@@ -36,8 +39,8 @@ public class DepositService implements IDepositService {
     }
 
     @Override
+    @Cacheable(key = "#id")
     @Transactional(readOnly = true)
-    @Cacheable(value = "DepositService::findDepositById", key = "#id")
     public Optional<Deposit> findDepositById(String id) {
         return getDepositCrudRepository().findById(id);
     }
@@ -45,7 +48,7 @@ public class DepositService implements IDepositService {
 
     @Override
     @Transactional
-    @Cacheable(value = "DepositService::findClient", key = "#deposit.id", condition = "#deposit.id != null")
+    @CachePut(key = "#deposit.id")
     public Deposit createDeposit(Deposit deposit) {
         return getDepositCrudRepository().save(deposit);
     }
@@ -79,16 +82,19 @@ public class DepositService implements IDepositService {
     }
 
     @Override
+    @CacheEvict(key = "#id", allEntries = true)
     public void deleteDeposit(String id) {
         getDepositCrudRepository().deleteById(id);
     }
 
     @Override
+    @CachePut(key = "#query")
     public Iterable<Deposit> search(String query, Integer offset, Integer limit) {
         return getDepositCrudRepository().searchDeposits(query, offset, limit);
     }
 
     @Override
+    @CacheEvict(allEntries = true)
     public void deleteAllDeposits() {
         getDepositCrudRepository().deleteAll();
     }

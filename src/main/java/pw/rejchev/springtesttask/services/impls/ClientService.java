@@ -5,6 +5,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +21,8 @@ import java.util.Optional;
 @Getter
 @Setter
 @Service
+@Transactional
+@CacheConfig(cacheNames = "clients")
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ClientService implements IClientService {
 
@@ -35,15 +40,15 @@ public class ClientService implements IClientService {
     }
 
     @Override
+    @Cacheable(key = "#id")
     @Transactional(readOnly = true)
-    @Cacheable(value = "ClientService::findClient", key = "#id")
     public Optional<Client> findClient(String id) {
         return getClientRepository().findById(id);
     }
 
     @Override
     @Transactional
-    @Cacheable(value = "ClientService::findClient", key = "#client.id", condition = "#client.id != null")
+    @CachePut(key = "#client.id")
     public Client createClient(Client client) {
         return getClientRepository().save(client);
     }
@@ -72,16 +77,19 @@ public class ClientService implements IClientService {
     }
 
     @Override
+    @CacheEvict(key = "#id", allEntries = true)
     public void deleteClient(String id) {
         getClientRepository().deleteById(id);
     }
 
     @Override
+    @CachePut(key = "#query")
     public Iterable<Client> search(String query, Integer offset, Integer limit) {
         return getClientRepository().searchClients(query, offset, limit);
     }
 
     @Override
+    @CacheEvict(allEntries = true)
     public void deleteAllClients() {
         getClientRepository().deleteAll();
     }
